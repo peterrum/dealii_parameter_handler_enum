@@ -67,22 +67,25 @@ namespace dealii
   }   // namespace Patterns
 } // namespace dealii
 
-enum class Test
+enum class PreconditionerType
 {
-  A,
-  B
+  Identity,
+  AMG
 };
 
 namespace dealii::Patterns::Tools
 {
   template <class T>
-  struct Convert<T, typename std::enable_if<std::is_same<T, Test>::value>::type>
+  struct Convert<
+    T,
+    typename std::enable_if<std::is_same<T, PreconditionerType>::value>::type>
     : public ConvertEnumBase<T, Convert<T>>
   {
     static std::vector<std::pair<std::string, T>>
     get_possibilities()
     {
-      return {{"A", Test::A}, {"B", Test::B}};
+      return {{"Identity", PreconditionerType::Identity},
+              {"AMG", PreconditionerType::AMG}};
     }
   };
 } // namespace dealii::Patterns::Tools
@@ -93,8 +96,8 @@ main()
 {
   ParameterHandler prm;
 
-  Test a;
-  prm.add_parameter("test", a);
+  PreconditionerType preconditioner;
+  prm.add_parameter("test", preconditioner);
 
   prm.print_parameters(std::cout, ParameterHandler::OutputStyle::PRM);
 
