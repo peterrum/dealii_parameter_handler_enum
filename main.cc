@@ -6,12 +6,6 @@
 
 using namespace dealii;
 
-enum class Test
-{
-  A,
-  B
-};
-
 
 namespace dealii
 {
@@ -19,17 +13,15 @@ namespace dealii
   {
     namespace Tools
     {
-      template <class T>
-      struct Convert<
-        T,
-        typename std::enable_if<std::is_same<T, Test>::value>::type>
+      template <class T, class U>
+      struct ConvertEnumBase
       {
         static std::unique_ptr<Patterns::PatternBase>
         to_pattern()
         {
           std::stringstream ss;
 
-          const auto possibilities = get_possibilities();
+          const auto possibilities = U::get_possibilities();
 
           ss << possibilities[0].first;
 
@@ -46,11 +38,13 @@ namespace dealii
         {
           (void)pattern;
 
-          for (const auto &i : get_possibilities())
+          for (const auto &i : U::get_possibilities())
             if (t == i.second)
               return i.first;
 
-          return get_possibilities()[0].first;
+          Assert(false, ExcNotImplemented());
+
+          return U::get_possibilities()[0].first;
         }
 
         static T
@@ -60,14 +54,37 @@ namespace dealii
         {
           (void)pattern;
 
-          for (const auto &i : get_possibilities())
+          for (const auto &i : U::get_possibilities())
             if (s == i.first)
               return i.second;
 
-          return get_possibilities()[0].second;
-        }
+          Assert(false, ExcNotImplemented());
 
-      private:
+          return U::get_possibilities()[0].second;
+        }
+      };
+    } // namespace Tools
+  }   // namespace Patterns
+} // namespace dealii
+
+enum class Test
+{
+  A,
+  B
+};
+
+namespace dealii
+{
+  namespace Patterns
+  {
+    namespace Tools
+    {
+      template <class T>
+      struct Convert<
+        T,
+        typename std::enable_if<std::is_same<T, Test>::value>::type>
+        : public ConvertEnumBase<T, Convert<T>>
+      {
         static std::vector<std::pair<std::string, T>>
         get_possibilities()
         {
