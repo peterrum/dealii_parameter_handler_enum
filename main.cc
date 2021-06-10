@@ -24,7 +24,7 @@ namespace dealii
     namespace Tools
     {
       template <typename T>
-      struct convert_enum_compatible
+      struct has_values
       {
       private:
         static void
@@ -42,7 +42,7 @@ namespace dealii
       template <class T>
       struct Convert<
         T,
-        typename std::enable_if<convert_enum_compatible<T>::value>::type>
+        typename std::enable_if<has_values<T>::value>::type>
       {
         static std::unique_ptr<Patterns::PatternBase>
         to_pattern()
