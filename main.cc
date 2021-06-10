@@ -73,27 +73,19 @@ enum class Test
   B
 };
 
-namespace dealii
+namespace dealii::Patterns::Tools
 {
-  namespace Patterns
+  template <class T>
+  struct Convert<T, typename std::enable_if<std::is_same<T, Test>::value>::type>
+    : public ConvertEnumBase<T, Convert<T>>
   {
-    namespace Tools
+    static std::vector<std::pair<std::string, T>>
+    get_possibilities()
     {
-      template <class T>
-      struct Convert<
-        T,
-        typename std::enable_if<std::is_same<T, Test>::value>::type>
-        : public ConvertEnumBase<T, Convert<T>>
-      {
-        static std::vector<std::pair<std::string, T>>
-        get_possibilities()
-        {
-          return {{"A", Test::A}, {"B", Test::B}};
-        }
-      };
-    } // namespace Tools
-  }   // namespace Patterns
-} // namespace dealii
+      return {{"A", Test::A}, {"B", Test::B}};
+    }
+  };
+} // namespace dealii::Patterns::Tools
 
 
 int
