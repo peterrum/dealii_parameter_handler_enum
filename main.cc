@@ -111,12 +111,9 @@ namespace dealii
          * Convert value to string.
          */
         static std::string
-        to_string(
-          const T &                    t,
-          const Patterns::PatternBase &values = *Convert<T>::to_pattern())
+        to_string(const T &t,
+                  const Patterns::PatternBase & = *Convert<T>::to_pattern())
         {
-          (void)values;
-
           return t._to_string();
         }
 
@@ -124,12 +121,9 @@ namespace dealii
          * Convert string to value.
          */
         static T
-        to_value(
-          const std::string &          s,
-          const Patterns::PatternBase &pattern = *Convert<T>::to_pattern())
+        to_value(const std::string &s,
+                 const Patterns::PatternBase & = *Convert<T>::to_pattern())
         {
-          (void)pattern;
-
           return T::_from_string(s.c_str());
         }
       };
