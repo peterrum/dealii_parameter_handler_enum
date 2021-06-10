@@ -7,13 +7,21 @@
 using namespace dealii;
 
 
+
+template <typename T>
+std::vector<std::pair<std::string, T>>
+get_possibilities()
+{
+  return {};
+}
+
 namespace dealii
 {
   namespace Patterns
   {
     namespace Tools
     {
-      template <class T, class U>
+      template <class T>
       struct ConvertEnumBase
       {
         static std::unique_ptr<Patterns::PatternBase>
@@ -21,7 +29,7 @@ namespace dealii
         {
           std::stringstream ss;
 
-          const auto possibilities = U::get_possibilities();
+          const auto possibilities = get_possibilities<T>();
 
           ss << possibilities[0].first;
 
@@ -38,13 +46,13 @@ namespace dealii
         {
           (void)pattern;
 
-          for (const auto &i : U::get_possibilities())
+          for (const auto &i : get_possibilities<T>())
             if (t == i.second)
               return i.first;
 
           Assert(false, ExcNotImplemented());
 
-          return U::get_possibilities()[0].first;
+          return get_possibilities<T>()[0].first;
         }
 
         static T
@@ -54,13 +62,13 @@ namespace dealii
         {
           (void)pattern;
 
-          for (const auto &i : U::get_possibilities())
+          for (const auto &i : get_possibilities<T>())
             if (s == i.first)
               return i.second;
 
           Assert(false, ExcNotImplemented());
 
-          return U::get_possibilities()[0].second;
+          return get_possibilities<T>()[0].second;
         }
       };
     } // namespace Tools
@@ -73,21 +81,22 @@ enum class PreconditionerType
   AMG
 };
 
+template <>
+std::vector<std::pair<std::string, PreconditionerType>>
+get_possibilities()
+{
+  return {{"Identity", PreconditionerType::Identity},
+          {"AMG", PreconditionerType::AMG}};
+}
+
 namespace dealii::Patterns::Tools
 {
   template <class T>
   struct Convert<
     T,
     typename std::enable_if<std::is_same<T, PreconditionerType>::value>::type>
-    : public ConvertEnumBase<T, Convert<T>>
-  {
-    static std::vector<std::pair<std::string, T>>
-    get_possibilities()
-    {
-      return {{"Identity", PreconditionerType::Identity},
-              {"AMG", PreconditionerType::AMG}};
-    }
-  };
+    : public ConvertEnumBase<T>
+  {};
 } // namespace dealii::Patterns::Tools
 
 
