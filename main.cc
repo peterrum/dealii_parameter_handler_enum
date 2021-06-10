@@ -8,21 +8,15 @@
 
 using namespace dealii;
 
-
-
-template <typename T>
-std::vector<std::pair<std::string, T>>
-get_possibilities()
-{
-  return {};
-}
-
 namespace dealii
 {
   namespace Patterns
   {
     namespace Tools
     {
+      /**
+       * Check for T::has_values()
+       */
       template <typename T>
       struct has_values
       {
@@ -39,11 +33,66 @@ namespace dealii
           !std::is_same<void, decltype(detect(std::declval<T>()))>::value;
       };
 
-      template <class T>
-      struct Convert<
-        T,
-        typename std::enable_if<has_values<T>::value>::type>
+      /**
+       * Check for T::_to_string()
+       */
+      template <typename T>
+      struct has_to_string
       {
+      private:
+        static void
+        detect(...);
+
+        template <typename U>
+        static decltype(std::declval<U const>()._to_string())
+        detect(const U &);
+
+      public:
+        static const bool value =
+          !std::is_same<void, decltype(detect(std::declval<T>()))>::value;
+      };
+
+
+      /**
+       * Check for T::_from_string()
+       */
+      template <typename T>
+      struct has_from_string
+      {
+      private:
+        static void
+        detect(...);
+
+        template <typename U>
+        static decltype(std::declval<U const>()._from_string(0))
+        detect(const U &);
+
+      public:
+        static const bool value =
+          !std::is_same<void, decltype(detect(std::declval<T>()))>::value;
+      };
+
+      /**
+       * Check if T::has_values(), T::_to_string(), and T::_from_string() is
+       * defined. If yes, we can simply convert it.
+       */
+      template <typename T>
+      struct is_convertible
+      {
+        static const bool value = has_values<T>::value &&
+                                  has_to_string<T>::value &&
+                                  has_from_string<T>::value;
+      };
+
+      /**
+       * Converter class for structs of type T that fulfill is_convertible<T>.
+       */
+      template <class T>
+      struct Convert<T, typename std::enable_if<is_convertible<T>::value>::type>
+      {
+        /**
+         * Convert to pattern.
+         */
         static std::unique_ptr<Patterns::PatternBase>
         to_pattern()
         {
@@ -62,6 +111,9 @@ namespace dealii
           return std::make_unique<Patterns::Selection>(ss.str());
         }
 
+        /**
+         * Convert value to string.
+         */
         static std::string
         to_string(
           const T &                    t,
@@ -72,6 +124,9 @@ namespace dealii
           return t._to_string();
         }
 
+        /**
+         * Convert string to value.
+         */
         static T
         to_value(
           const std::string &          s,
@@ -87,7 +142,7 @@ namespace dealii
   }   // namespace Patterns
 } // namespace dealii
 
-BETTER_ENUM(PreconditionerType, char, Identity, AMG, Jacobi)
+BETTER_ENUM(PreconditionerType, char, Identity, AMG, Jacobi, BlockJacobi)
 
 int
 main()
@@ -97,6 +152,7 @@ main()
   PreconditionerType preconditioner = PreconditionerType::Identity;
   prm.add_parameter("preconditioner", preconditioner);
 
+  prm.print_parameters(std::cout, ParameterHandler::OutputStyle::Description);
   prm.print_parameters(std::cout, ParameterHandler::OutputStyle::PRM);
 
   prm.parse_input("test.json");
