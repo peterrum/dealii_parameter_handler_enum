@@ -1,6 +1,8 @@
 #include <deal.II/base/parameter_handler.h>
 #include <deal.II/base/patterns.h>
 
+#include <boost/algorithm/string/join.hpp>
+
 #include <sstream>
 #include <string>
 
@@ -101,14 +103,8 @@ namespace dealii
           for (const auto i : T::_values())
             values.push_back(i._to_string());
 
-          std::stringstream ss;
-
-          ss << values[0];
-
-          for (unsigned int i = 1; i < values.size(); ++i)
-            ss << "|" << values[i];
-
-          return std::make_unique<Patterns::Selection>(ss.str());
+          return std::make_unique<Patterns::Selection>(
+            boost::algorithm::join(values, "|"));
         }
 
         /**
