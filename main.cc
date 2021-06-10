@@ -4,6 +4,8 @@
 #include <sstream>
 #include <string>
 
+#include "enum.h"
+
 using namespace dealii;
 
 
@@ -21,20 +23,41 @@ namespace dealii
   {
     namespace Tools
     {
+      template <typename T>
+      struct convert_enum_compatible
+      {
+      private:
+        static void
+        detect(...);
+
+        template <typename U>
+        static decltype(std::declval<U const>()._values())
+        detect(const U &);
+
+      public:
+        static const bool value =
+          !std::is_same<void, decltype(detect(std::declval<T>()))>::value;
+      };
+
       template <class T>
-      struct ConvertEnumBase
+      struct Convert<
+        T,
+        typename std::enable_if<convert_enum_compatible<T>::value>::type>
       {
         static std::unique_ptr<Patterns::PatternBase>
         to_pattern()
         {
+          std::vector<std::string> values;
+
+          for (const auto i : T::_values())
+            values.push_back(i._to_string());
+
           std::stringstream ss;
 
-          const auto possibilities = get_possibilities<T>();
+          ss << values[0];
 
-          ss << possibilities[0].first;
-
-          for (unsigned int i = 1; i < possibilities.size(); ++i)
-            ss << "|" << possibilities[i].first;
+          for (unsigned int i = 1; i < values.size(); ++i)
+            ss << "|" << values[i];
 
           return std::make_unique<Patterns::Selection>(ss.str());
         }
@@ -42,17 +65,11 @@ namespace dealii
         static std::string
         to_string(
           const T &                    t,
-          const Patterns::PatternBase &pattern = *Convert<T>::to_pattern())
+          const Patterns::PatternBase &values = *Convert<T>::to_pattern())
         {
-          (void)pattern;
+          (void)values;
 
-          for (const auto &i : get_possibilities<T>())
-            if (t == i.second)
-              return i.first;
-
-          Assert(false, ExcNotImplemented());
-
-          return get_possibilities<T>()[0].first;
+          return t._to_string();
         }
 
         static T
@@ -62,51 +79,23 @@ namespace dealii
         {
           (void)pattern;
 
-          for (const auto &i : get_possibilities<T>())
-            if (s == i.first)
-              return i.second;
-
-          Assert(false, ExcNotImplemented());
-
-          return get_possibilities<T>()[0].second;
+          return T::_from_string(s.c_str());
         }
       };
+
     } // namespace Tools
   }   // namespace Patterns
 } // namespace dealii
 
-enum class PreconditionerType
-{
-  Identity,
-  AMG
-};
-
-template <>
-std::vector<std::pair<std::string, PreconditionerType>>
-get_possibilities()
-{
-  return {{"Identity", PreconditionerType::Identity},
-          {"AMG", PreconditionerType::AMG}};
-}
-
-namespace dealii::Patterns::Tools
-{
-  template <class T>
-  struct Convert<
-    T,
-    typename std::enable_if<std::is_same<T, PreconditionerType>::value>::type>
-    : public ConvertEnumBase<T>
-  {};
-} // namespace dealii::Patterns::Tools
-
+BETTER_ENUM(PreconditionerType, char, Identity, AMG, Jacobi)
 
 int
 main()
 {
   ParameterHandler prm;
 
-  PreconditionerType preconditioner;
-  prm.add_parameter("test", preconditioner);
+  PreconditionerType preconditioner = PreconditionerType::Identity;
+  prm.add_parameter("preconditioner", preconditioner);
 
   prm.print_parameters(std::cout, ParameterHandler::OutputStyle::PRM);
 
